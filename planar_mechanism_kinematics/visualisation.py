@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from planar_mechanism_kinematics.mechanism import PlanarMechanism
 
-
 class MechanismPlotter(PlanarMechanism):
     def __init__(self):
         super().__init__()
@@ -27,12 +26,14 @@ class MechanismPlotter(PlanarMechanism):
         plt.scatter(xvals, yvals, s=2)
         plt.scatter([x + R * np.cos(phi)], [y + R * np.sin(phi)], s=3)
 
-    def plot_mechanism_for_state(self, q):
-        # 1
+    def plot_mechanism_for_state(self, q,name=0):
+        # 1 Plot gear 1. it is centered at 0,0
         self.gearplot(0, 0, q[1], self.R1)
 
         # 2
-        self.gearplot(np.cos(q[7]) * self.L7, np.sin(q[7]) * self.L7, q[2],
+        gear_2_x = np.cos(q[7]) * self.L7
+        gear_2_y = np.sin(q[7]) * self.L7
+        self.gearplot(gear_2_x, gear_2_y, q[2],
                       self.R2)  # Make the computation of these positions more clear
 
         # 3
@@ -45,15 +46,23 @@ class MechanismPlotter(PlanarMechanism):
         self.gearplot(np.cos(q[7]) * self.L7, np.sin(q[7]) * self.L7, q[5], self.R5)
 
         # 6
-        self.gearplot(q[-2], q[-1], q[6], self.R6)
-        plt.plot([q[-2], q[-2] + np.cos(q[6]) * self.R6], [q[-1], q[-1] + np.sin(q[6]) * self.R6], '-k')
-        plt.scatter(q[-2], q[-1], marker="o", color="k")
+        # TODO, the plotting states, governing states and the auxilary states are confusing
+        # Should have different naming conventinos than q
+        x_knee = np.cos(q[7]) * self.L7
+        y_knee = np.sin(q[7]) * self.L7
+
+        x_end_effector = x_knee + np.cos(q[8]) * self.L8
+        y_end_effector = y_knee + np.sin(q[8]) * self.L8
+
+        self.gearplot(x_end_effector, y_end_effector, q[6], self.R6)
+        plt.plot([x_end_effector, x_end_effector + np.cos(q[6]) * self.R6], [y_end_effector, y_end_effector + np.sin(q[6]) * self.R6], '-k')
+        plt.scatter(x_end_effector, y_end_effector, marker="o", color="k")
 
         # 7
-        plt.plot([0, np.cos(q[7]) * self.L7], [0, np.sin(q[7]) * self.L7], "-r")
+        plt.plot([0, x_knee], [0, y_knee], "-r")
 
         # 8
-        plt.plot([np.cos(q[7]) * self.L7, q[-2]], [np.sin(q[7]) * self.L7, q[-1]], '-r')
+        plt.plot([x_knee, x_end_effector], [y_knee, y_end_effector], '-r')
 
         plt.text(-1300, 800, '$\phi_1$ = ' + str(round(q[1], 3)))
         plt.text(-1300, 700, '$\phi_4$ = ' + str(round(q[4], 3)))
@@ -64,7 +73,24 @@ class MechanismPlotter(PlanarMechanism):
         plt.text(-20, -260, '$D_2$')
         plt.text(-20, -95, '$D_3$')
         plt.axis('equal')
-        plt.axis('off')
+        # plt.axis('off')
+        # plt.savefig("image-" + str(name) + ".png", dpi=300)  # ".png")
+        plt.savefig("image-{0:03d}".format(name) + ".png", dpi=300)  # ".png")
+        plt.close()
+
+    def plot_mechanism_for_many_states(self,state_array):
+        for i,state in enumerate(state_array.transpose()):
+            self.plot_mechanism_for_state(state,name=i)
+
+    def to_gif(self):
+        import os
+
+        # ffmpeg_command = "ffmpeg - f image2 - framerate 9 - i image_ % 003 d.jpg - vf scale = 531x299, transpose = 1, crop = 299, 431, 0, 100 out.gif"
+        ffmpeg_command = "ffmpeg -i image-%003d.png out.gif"
+
+        os.system(ffmpeg_command)
+
+
 
     # plt.show()
 
