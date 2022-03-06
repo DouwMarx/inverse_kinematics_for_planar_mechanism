@@ -89,6 +89,7 @@ class MechanismPlotter(PlanarMechanism):
         ffmpeg_command = "ffmpeg -i image-%003d.png out.gif"
 
         os.system(ffmpeg_command)
+        os.system("y") # yes to overwrite
 
 
 

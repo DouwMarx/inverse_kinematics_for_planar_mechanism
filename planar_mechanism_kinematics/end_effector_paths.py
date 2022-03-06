@@ -21,7 +21,7 @@ def vel_block(time):
 
 def block(time):
     t = time
-    half_d = 470
+    half_d = 450
     if t < 2:
         x = half_d - half_d * t
         y = half_d
