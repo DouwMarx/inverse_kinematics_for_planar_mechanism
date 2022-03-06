@@ -8,7 +8,7 @@ mechanism.set_desired_path(block)  # Assign a function that describes the end ef
 
 
 time_duration_to_solve_for = [0, 8] # Solve for 0-4 seconds
-sol = mechanism.solve(time_duration_to_solve_for, fs=100)
+sol = mechanism.solve(time_duration_to_solve_for, fs=10)
 
 # Pass the solution of the states to be plotted
 plotter = MechanismPlotter()
