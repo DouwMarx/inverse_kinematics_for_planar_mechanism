@@ -122,7 +122,7 @@ class PlanarMechanism(object):
 
     def set_desired_path(self, end_effector_with_time_function):
         self.end_effector_path = end_effector_with_time_function
-        self.end_effector_velocity = lambda eval_at: derivative(self.end_effector_path, eval_at, dx=1e-2)
+        self.end_effector_velocity = lambda eval_at: derivative(self.end_effector_path, eval_at, dx=1e-6)
 
 def f(x):
     return x**2 + 1

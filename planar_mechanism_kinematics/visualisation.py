@@ -1,6 +1,11 @@
+import glob
+import os
+from tqdm import tqdm
+
 import numpy as np
 import matplotlib.pyplot as plt
 from planar_mechanism_kinematics.mechanism import PlanarMechanism
+
 
 class MechanismPlotter(PlanarMechanism):
     def __init__(self):
@@ -26,7 +31,7 @@ class MechanismPlotter(PlanarMechanism):
         plt.scatter(xvals, yvals, s=2)
         plt.scatter([x + R * np.cos(phi)], [y + R * np.sin(phi)], s=3)
 
-    def plot_mechanism_for_state(self, q,name=0):
+    def plot_mechanism_for_state(self, q, name=0, save_path=None):
         # 1 Plot gear 1. it is centered at 0,0
         self.gearplot(0, 0, q[1], self.R1)
 
@@ -55,7 +60,8 @@ class MechanismPlotter(PlanarMechanism):
         y_end_effector = y_knee + np.sin(q[8]) * self.L8
 
         self.gearplot(x_end_effector, y_end_effector, q[6], self.R6)
-        plt.plot([x_end_effector, x_end_effector + np.cos(q[6]) * self.R6], [y_end_effector, y_end_effector + np.sin(q[6]) * self.R6], '-k')
+        plt.plot([x_end_effector, x_end_effector + np.cos(q[6]) * self.R6],
+                 [y_end_effector, y_end_effector + np.sin(q[6]) * self.R6], '-k')
         plt.scatter(x_end_effector, y_end_effector, marker="o", color="k")
 
         # 7
@@ -75,23 +81,34 @@ class MechanismPlotter(PlanarMechanism):
         plt.axis('equal')
         # plt.axis('off')
         # plt.savefig("image-" + str(name) + ".png", dpi=300)  # ".png")
-        plt.savefig("image-{0:03d}".format(name) + ".png", dpi=300)  # ".png")
+
+        if save_path is not None:
+            plt.savefig(save_path.joinpath("image-{0:03d}".format(name) + ".png"), dpi=300)  # ".png")
         plt.close()
 
-    def plot_mechanism_for_many_states(self,state_array):
-        for i,state in enumerate(state_array.transpose()):
-            self.plot_mechanism_for_state(state,name=i)
+    def plot_mechanism_for_many_states(self, state_array, save_path=None):
+        if save_path is not None:
+            filelist = [f for f in os.listdir(save_path) if f.endswith(".png")]
+            for f in filelist:
+                os.remove(os.path.join(save_path, f))
 
-    def to_gif(self):
+        for i, state in enumerate(tqdm(state_array.transpose())):
+            self.plot_mechanism_for_state(state, name=i, save_path=save_path)
+
+    def to_gif(self,save_path):
         import os
 
         # ffmpeg_command = "ffmpeg - f image2 - framerate 9 - i image_ % 003 d.jpg - vf scale = 531x299, transpose = 1, crop = 299, 431, 0, 100 out.gif"
         ffmpeg_command = "ffmpeg -i image-%003d.png out.gif"
 
+        os.chdir(str(save_path))
+        try:
+            os.remove("out.gif")
+        except OSError:
+            pass
+
         os.system(ffmpeg_command)
-        os.system("y") # yes to overwrite
-
-
+        os.system("y")  # yes to overwrite
 
     # plt.show()
 
