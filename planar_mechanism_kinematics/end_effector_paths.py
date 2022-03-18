@@ -21,7 +21,7 @@ def vel_block(time):
 
 
 def smooth_squiggles(time):
-    r = 500
+    r = 0.2*(np.sin(10*time))*500 + 500
     omega = 2*np.pi*1
     phi = 2*np.pi*np.sin(time)
     theta = time*omega

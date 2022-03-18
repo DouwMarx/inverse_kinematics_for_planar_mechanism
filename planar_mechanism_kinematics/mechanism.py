@@ -78,13 +78,41 @@ class PlanarMechanism(object):
             return np.linalg.norm(np.array([x - (self.L7 * np.cos(phis[0]) + self.L8 * np.cos(phis[1])),
                              y - (self.L7 * np.sin(phis[0]) + self.L8 * np.sin(phis[1]))]))
 
-        sol = opt.minimize(objective,np.array([-0.1,0.1]),tol=1e-1)
+        sol = opt.minimize(objective,np.array([-0.1,0.1]),tol=1e-6)
         # print(sol)
 
         if sol["success"] is not True:
             print("Problems with solving for initial condition: "+sol["message"])
 
         return np.hstack([sol["x"],q_initial[2]]) # Add the rotation back into the state dict
+
+    def objective_for_inverse_probelm(self,phis,end_effector_position):
+
+        x = end_effector_position[0]
+        y = end_effector_position[1]
+        # phi6 = end_effector_position[2]
+
+        return np.linalg.norm(np.array([x - (self.L7 * np.cos(phis[0]) + self.L8 * np.cos(phis[1])),
+                                        y - (self.L7 * np.sin(phis[0]) + self.L8 * np.sin(phis[1]))]))
+
+    def solve_inverse_problem(self,x,y,phis_guess):
+        sol = opt.minimize(self.objective_for_inverse_probelm, phis_guess, tol=1e-1)
+        return sol["x"]
+
+    def brute_force_solution(self,t_range):
+        states = np.zeros((3,len(t_range)))
+        phi_guess = np.array([0,0]) # initial guess
+        for i,t in enumerate(t_range):
+            end_effector_position = self.end_effector_path(t)
+            state_xy = opt.minimize(self.objective_for_inverse_probelm, phi_guess,end_effector_position, tol=1e-4)["x"]
+            state = np.hstack([state_xy,np.array([end_effector_position[2]])])
+            states[:,i] = state
+            phi_guess = state_xy # Current solution acts as optimisation start point for next iteration
+
+        return states
+
+
+
 
     def dq_dt(self, t, q):
         end_effector_velocity = self.end_effector_velocity(t)
@@ -104,10 +132,10 @@ class PlanarMechanism(object):
 
         t_start = t_span[0]
         t_end = t_span[1]
-
         t_duration = t_end - t_start
+        t_range = np.linspace(t_start, t_end, int(t_duration * fs))
 
-        sol = solve_ivp(self.dq_dt, t_span, initial_state_vector, t_eval= np.linspace(t_start, t_end,int(t_duration*fs)),rtol =1e-2, atol = 1e-2)
+        sol = solve_ivp(self.dq_dt, t_span, initial_state_vector, t_eval= t_range,rtol =1e-2, atol = 1e-2)
         return sol["y"]
 
     def solve_for_auxiliary_states(self, solved_states):
@@ -116,8 +144,12 @@ class PlanarMechanism(object):
             all_states[:,col] = self.solve_for_required_angles(solved_states[:,col])
         return all_states
 
-    def solve(self,t_span,fs = 10):
-        sol = self.solve_for_states(t_span,fs=fs)
+    def solve(self,t_span,fs = 10,method="brute_force"):
+        if method=="jacobian":
+            sol = self.solve_for_states(t_span,fs=fs)
+        elif method=="brute_force":
+            t_range = np.linspace(t_span[0],t_span[1],int((t_span[1]-t_span[0])*fs))
+            sol = self.brute_force_solution(t_range)
         return self.solve_for_auxiliary_states(sol)
 
     def set_desired_path(self, end_effector_with_time_function):

@@ -1,6 +1,7 @@
 import glob
 import os
 from tqdm import tqdm
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,6 +33,9 @@ class MechanismPlotter(PlanarMechanism):
         plt.scatter([x + R * np.cos(phi)], [y + R * np.sin(phi)], s=3)
 
     def plot_mechanism_for_state(self, q, name=0, save_path=None):
+
+        plt.ioff() # Turn interactive plotting off
+
         # 1 Plot gear 1. it is centered at 0,0
         self.gearplot(0, 0, q[1], self.R1)
 
@@ -79,7 +83,7 @@ class MechanismPlotter(PlanarMechanism):
         plt.text(-20, -260, '$D_2$')
         plt.text(-20, -95, '$D_3$')
         plt.axis('equal')
-        # plt.axis('off')
+        plt.axis('off')
         # plt.savefig("image-" + str(name) + ".png", dpi=300)  # ".png")
 
         if save_path is not None:
@@ -99,6 +103,9 @@ class MechanismPlotter(PlanarMechanism):
         import os
 
         # ffmpeg_command = "ffmpeg - f image2 - framerate 9 - i image_ % 003 d.jpg - vf scale = 531x299, transpose = 1, crop = 299, 431, 0, 100 out.gif"
+
+        pallette_command = "ffmpeg - i image001.png - vf palettegen palette.png"
+        # ffmpeg_command = "ffmpeg -i image-%003d.png -i palette.png -lavfi paletteuse out.gif"
         ffmpeg_command = "ffmpeg -i image-%003d.png out.gif"
 
         os.chdir(str(save_path))
@@ -106,6 +113,10 @@ class MechanismPlotter(PlanarMechanism):
             os.remove("out.gif")
         except OSError:
             pass
+
+        os.system(pallette_command)
+
+        # time.sleep(0.2)
 
         os.system(ffmpeg_command)
         os.system("y")  # yes to overwrite
